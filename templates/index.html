@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/style.css?v={{ version }}" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-badge">PeoplePrime Technologies</div>
+        <h1>HR Policy<br/>Copilot</h1>
+        <p class="muted">Internal employee policy knowledge base with verified agentic RAG and external fallback.</p>
+      </div>
+      <div class="workflow-card">
+        <h3>LangGraph Decision Pipeline</h3>
+        <div class="flow-step">1. Intent Classification</div>
+        <div class="flow-step">2. Private Pinecone KB (384-d)</div>
+        <div class="flow-step">3. LLM Evidence Grading</div>
+        <div class="flow-step">4. Fallback Web Search</div>
+        <div class="flow-step">5. Query Rewrite & Retry Loop</div>
+        <div class="flow-step">6. Grounded Answer Synthesis</div>
+      </div>
+      <button id="openUpload" class="secondary-btn" type="button">+ Upload Policy Document</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="status-dot"></span>
+          <span>Enterprise Employee Support Copilot</span>
+        </div>
+        <span class="pill">Groq + LangGraph + Pinecone</span>
+      </header>
+
+      <section id="chat" class="chat-area">
+        <div class="message assistant">
+          <div class="avatar">HR</div>
+          <div class="bubble">
+            <strong>Welcome to PeoplePrime HR Support. How can I help you today?</strong>
+            <p>I can help answer questions regarding paid time off, remote working, attendance, payroll, health benefits, onboarding, offboarding, and company code of conduct.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="composer-wrap">
+        <div class="examples">
+          <button type="button" class="example">How many annual leave days do employees receive?</button>
+          <button type="button" class="example">What are our remote work eligibility guidelines?</button>
+          <button type="button" class="example">What are the statutory public holidays for this year?</button>
+        </div>
+        <form id="chatForm" class="composer">
+          <textarea id="question" rows="2" placeholder="Ask a PeoplePrime HR policy or support question..." required></textarea>
+          <button type="submit" class="send-btn" id="submitBtn">Ask Copilot</button>
+        </form>
+      </section>
+    </main>
+
+    <aside class="trace-panel">
+      <h2>Agent Decision Trace</h2>
+      <p class="muted">Real-time inspection of LangGraph state routing and grading steps.</p>
+      <div id="trace" class="trace-list">
+        <div class="empty">Submit a query to inspect live decision flow.</div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span>KB Grade</span>
+          <strong id="kbGradeVal">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Web Grade</span>
+          <strong id="webGradeVal">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Retries</span>
+          <strong id="retryCountVal">0</strong>
+        </div>
+      </div>
+      <div class="source-box">
+        <span>Grounded Source</span>
+        <strong id="sourceUsed">—</strong>
+      </div>
+    </aside>
+  </div>
+
+  <div id="uploadModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Ingest Policy Document</h2>
+        <button id="closeUpload" type="button">×</button>
+      </div>
+      <p class="muted">Supported formats: PDF, DOCX, TXT, MD (Max 15MB). Documents are parsed, chunked, and embedded locally (all-MiniLM-L6-v2) into Pinecone.</p>
+      <div class="security-note">
+        <small>⚠️ Security Notice: Enter your runtime admin key. Credentials are kept in memory only and never stored in browser storage.</small>
+      </div>
+      <input id="adminKey" type="password" placeholder="Admin authorization key (X-Admin-Key)" autocomplete="off" />
+      <input id="fileInput" type="file" accept=".pdf,.txt,.md,.docx" />
+      <div id="fileInfo" class="file-info hidden"></div>
+      <button id="uploadBtn" class="send-btn full" type="button">Index Document</button>
+      <div id="uploadStatus" class="upload-status"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v={{ version }}"></script>
+</body>
+</html>
