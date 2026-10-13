@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "PeoplePrime HR Policy Agentic RAG Copilot"
     app_env: str = "development"
     app_version: str = "1.0.0"
+    port: int = 8000
 
     # LLM Settings (Groq API)
     groq_api_key: str = ""

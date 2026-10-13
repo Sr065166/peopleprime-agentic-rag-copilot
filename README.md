@@ -216,38 +216,34 @@ curl -X POST "http://localhost:8000/api/documents/ingest" `
 
 ---
 
-## 7. DigitalOcean Deployment Guide
+## 7. Cloud Deployment Guide: Render Free Web Service ($0 Budget)
 
-This project can be deployed to DigitalOcean using either **DigitalOcean App Platform** or a **DigitalOcean Droplet**.
+This project includes a native `render.yaml` blueprint and `Dockerfile.render` designed specifically for **Render Free Web Service** with zero hosting costs.
 
-### Deployment Target A: DigitalOcean App Platform (Recommended)
+### Render Free Tier Runtime Characteristics & Constraints:
+- **Cost**: **$0.00** (Free compute plan, zero paid add-ons, no credit card required).
+- **RAM Limit**: **512 MB**.
+- **Ephemeral Filesystem**: SQLite audit logs (`data/audit.db`) are ephemeral and reset when the free container spins down or redeploys.
+- **Spin-down & Cold Starts**: Render Free services spin down after 15 minutes of inactivity. The first incoming request will experience a cold-start delay (~50–60 seconds) while the container boots and PyTorch initializes. Subsequent warm requests process with normal low latency.
+- **Single Worker**: Configured with `--workers 1` to stay within memory limits.
 
-1. **Push Source Code to GitHub / GitLab**:
-   Ensure `.env` is **never committed**. Verify `.gitignore` is active.
-
-2. **Create New App in DigitalOcean**:
-   - Go to [DigitalOcean Control Panel](https://cloud.digitalocean.com/apps) -> **Create App**.
-   - Select your Git repository and branch (`main`).
-   - Set the source directory to `/solution` (or the repository root).
-
-3. **Configure Build & Run Settings**:
-   - **Environment**: Docker (or Python 3.11).
-   - **HTTP Port**: `8000`.
-   - **Instance Size**: Basic (1GB RAM / 1 vCPU or higher).
-
-4. **Set Environment Variables in DigitalOcean App Platform**:
-   Add the following environment variables under **App Settings -> App-Level Environment Variables**:
-   - `GROQ_API_KEY`: `${GROQ_API_KEY}` (mark as Encrypted)
-   - `GROQ_MODEL`: `openai/gpt-oss-120b`
-   - `PINECONE_API_KEY`: `${PINECONE_API_KEY}` (mark as Encrypted)
-   - `PINECONE_INDEX_NAME`: `peopleprime-hr-kb-384`
-   - `PINECONE_NAMESPACE`: `peopleprime-policies`
-   - `TAVILY_API_KEY`: `${TAVILY_API_KEY}` (mark as Encrypted)
-   - `ADMIN_API_KEY`: `${ADMIN_API_KEY}` (mark as Encrypted)
-   - `APP_ENV`: `production`
-
-5. **Deploy**:
-   DigitalOcean automatically builds the image, starts Uvicorn on port 8000, and provisions a managed HTTPS domain (e.g. `https://peopleprime-copilot-xxxx.ondigitalocean.app`).
+### Step-by-Step Render Deployment:
+1. **Push to GitHub**:
+   Ensure all changes are pushed to your repository `https://github.com/Sr065166/peopleprime-agentic-rag-copilot`.
+2. **Connect to Render**:
+   - Go to the [Render Dashboard](https://dashboard.render.com/).
+   - Click **New +** -> **Blueprint**.
+   - Connect your GitHub repository `peopleprime-agentic-rag-copilot`.
+   - Render detects `render.yaml` automatically and configures the `peopleprime-hr-copilot` service on the **Free** plan.
+3. **Configure Encrypted Environment Secrets**:
+   Under the service environment settings, supply your secure API keys (never commit these to Git):
+   - `GROQ_API_KEY`: `gsk_...`
+   - `PINECONE_API_KEY`: `pcsk_...`
+   - `TAVILY_API_KEY`: `tvly-...`
+   - `ADMIN_API_KEY`: `your-admin-token`
+4. **Deploy**:
+   - Click **Apply**.
+   - Render builds the container using `Dockerfile.render`, checks `/api/health`, and provisions a free HTTPS domain (e.g. `https://peopleprime-agentic-rag-copilot.onrender.com`).
 
 ---
 
