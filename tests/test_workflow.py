@@ -656,3 +656,157 @@ def test_pinecone_index_caching_across_calls():
         # list_indexes and describe_index should be called exactly once
         assert mock_pc.list_indexes.call_count == 1
         assert mock_pc.describe_index.call_count == 1
+
+
+def test_multi_topic_table_source_document_populated_from_metadata():
+    """Verify that multi-topic answer table Source Document cells are populated with actual retrieved metadata."""
+    from app.rag.workflow import generate_from_kb
+
+    mock_llm = MagicMock()
+    # Mock LLM returns empty/blank or placeholder in Source Document column
+    llm_output = (
+        "Here are the policy details:\n\n"
+        "| Policy Area | Allowance / Entitlement | Conditions / Details | Source Document |\n"
+        "|---|---|---|---|\n"
+        "| Annual Leave | 20 days paid leave | Manager approval required |  |\n"
+        "| Sick Leave | 10 days paid leave | Notify manager promptly | - |\n\n"
+        "This summary is based on the fictional PeoplePrime demonstration policy documents provided to the copilot."
+    )
+    mock_llm.invoke.return_value = MagicMock(content=llm_output)
+
+    kb_docs = [
+        {
+            "document_name": "PeoplePrime_Demo_HR_Policy_All_In_One.md",
+            "page_number": 1,
+            "text": "Annual leave is 20 days. Sick leave is 10 days.",
+            "score": 0.92,
+        }
+    ]
+    state = {
+        "question": "Summarize leave allowances in a table",
+        "kb_docs": kb_docs,
+        "execution_trace": [],
+    }
+
+    with patch("app.rag.workflow.get_llm", return_value=mock_llm):
+        result = generate_from_kb(state)
+
+        answer = result["answer"]
+        # Verify Source Document column contains the actual document metadata, not empty or placeholder
+        assert "| Annual Leave | 20 days paid leave | Manager approval required | PeoplePrime_Demo_HR_Policy_All_In_One.md (Page 1) |" in answer
+        assert "| Sick Leave | 10 days paid leave | Notify manager promptly | PeoplePrime_Demo_HR_Policy_All_In_One.md (Page 1) |" in answer
+        # Verify citations list contains the genuine document
+        assert any("PeoplePrime_Demo_HR_Policy_All_In_One.md" in c["title"] for c in result["citations"])
+
+
+def test_missing_source_metadata_not_replaced_with_invented_citation():
+    """Verify that if chunk metadata lacks a document name, citations are not fabricated."""
+    from app.rag.workflow import generate_from_kb
+
+    mock_llm = MagicMock()
+    llm_output = (
+        "| Policy Area | Allowance | Details | Source Document |\n"
+        "|---|---|---|---|\n"
+        "| Unknown Policy | 5 days | Details |  |\n\n"
+        "This summary is based on the fictional PeoplePrime demonstration policy documents provided to the copilot."
+    )
+    mock_llm.invoke.return_value = MagicMock(content=llm_output)
+
+    # Documents with missing or None document_name
+    kb_docs = [
+        {
+            "document_name": None,
+            "page_number": None,
+            "text": "Unknown policy text",
+            "score": 0.5,
+        }
+    ]
+    state = {
+        "question": "Tell me about this unknown policy",
+        "kb_docs": kb_docs,
+        "execution_trace": [],
+    }
+
+    with patch("app.rag.workflow.get_llm", return_value=mock_llm):
+        result = generate_from_kb(state)
+
+        answer = result["answer"]
+        # Should not fabricate a filename like 'HR_Policy.pdf' or 'PeoplePrime_Official.docx'
+        assert "PeoplePrime_Official" not in answer
+        assert "| Source unavailable |" in answer
+        # Citations list should not have fabricated citations
+        assert len(result["citations"]) == 0
+
+
+def test_fictional_demo_policy_labeling_replaces_official_wording():
+    """Verify that any wording describing policies as 'official internal' is normalized to fictional demonstration."""
+    from app.rag.workflow import generate_from_kb
+
+    mock_llm = MagicMock()
+    # LLM outputs legacy 'official internal' phrasing
+    llm_output = (
+        "Employees receive 20 days annual leave.\n\n"
+        "This summary is based on the official internal policy documents listed above."
+    )
+    mock_llm.invoke.return_value = MagicMock(content=llm_output)
+
+    kb_docs = [
+        {
+            "document_name": "PeoplePrime_Demo_HR_Policy_All_In_One.md",
+            "page_number": 1,
+            "text": "Annual leave policy",
+            "score": 0.9,
+        }
+    ]
+    state = {
+        "question": "What is the annual leave allowance?",
+        "kb_docs": kb_docs,
+        "execution_trace": [],
+    }
+
+    with patch("app.rag.workflow.get_llm", return_value=mock_llm):
+        result = generate_from_kb(state)
+
+        answer = result["answer"]
+        assert "official internal" not in answer.lower()
+        assert "fictional PeoplePrime demonstration policy documents provided to the copilot" in answer
+
+
+def test_citations_and_answer_accuracy_intact():
+    """Verify that single-topic and multi-topic answers preserve accurate citations structure and metadata."""
+    from app.rag.workflow import generate_from_kb
+
+    mock_llm = MagicMock()
+    llm_output = "Employees are entitled to 20 days of paid annual leave."
+    mock_llm.invoke.return_value = MagicMock(content=llm_output)
+
+    kb_docs = [
+        {
+            "document_name": "PeoplePrime_Demo_HR_Policy_All_In_One.md",
+            "page_number": 1,
+            "text": "Annual leave: 20 days.",
+            "score": 0.95,
+        },
+        {
+            "document_name": "Benefits_Guide.pdf",
+            "page_number": 3,
+            "text": "Medical benefits info.",
+            "score": 0.88,
+        },
+    ]
+    state = {
+        "question": "What is the annual leave allowance?",
+        "kb_docs": kb_docs,
+        "execution_trace": [],
+    }
+
+    with patch("app.rag.workflow.get_llm", return_value=mock_llm):
+        result = generate_from_kb(state)
+
+        assert result["source_used"] == "private_kb"
+        assert len(result["citations"]) == 2
+        assert result["citations"][0]["title"] == "PeoplePrime_Demo_HR_Policy_All_In_One.md (Page 1)"
+        assert result["citations"][0]["type"] == "private_kb"
+        assert result["citations"][1]["title"] == "Benefits_Guide.pdf (Page 3)"
+        assert result["citations"][1]["page"] == 3
+
