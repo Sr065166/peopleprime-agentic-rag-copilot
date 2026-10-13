@@ -4,19 +4,31 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PORT=8000
+    PORT=8000 \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    VECLIB_MAXIMUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1 \
+    HF_HUB_ENABLE_HF_TRANSFER=0
 
 WORKDIR /app
 
-# Install system dependencies (build-essential needed for light C extensions)
+# Install minimal system utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
+# Install python dependencies (lightweight ONNX runtime stack, ~60MB RAM footprint)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download ONNX model and tokenizer during build stage to ensure zero cold-start delay
+RUN python -c "\
+from huggingface_hub import hf_hub_download; \
+hf_hub_download(repo_id='sentence-transformers/all-MiniLM-L6-v2', filename='onnx/model.onnx'); \
+hf_hub_download(repo_id='sentence-transformers/all-MiniLM-L6-v2', filename='tokenizer.json'); \
+print('ONNX model and tokenizer baked into image successfully.')"
 
 # Copy application source
 COPY app/ ./app/

@@ -23,9 +23,10 @@ class Settings(BaseSettings):
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
 
-    # Embedding Settings (Local Hugging Face model)
+    # Embedding Settings (Local Hugging Face model / ONNX Runtime)
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dimension: int = 384
+    embedding_backend: str = "auto"  # 'auto', 'onnx', or 'torch'
 
     # External Web Search (Tavily Fallback)
     tavily_api_key: str = ""
@@ -62,6 +63,7 @@ class Settings(BaseSettings):
         "pinecone_cloud",
         "pinecone_region",
         "embedding_model",
+        "embedding_backend",
         "tavily_api_key",
         "admin_api_key",
         mode="before",
