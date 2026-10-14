@@ -7,6 +7,18 @@
 [![Groq](https://img.shields.io/badge/Groq-API-F55036.svg)](https://groq.com/)
 [![Embeddings](https://img.shields.io/badge/all--MiniLM--L6--v2-384--d-yellow.svg)](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
 
+## 🚀 Live Demo
+
+**Live Application:** [Open PeoplePrime HR Copilot](https://peopleprime-hr-copilot.onrender.com/)
+
+**Health Check:** [Check API Health](https://peopleprime-hr-copilot.onrender.com/api/health)
+
+**API Documentation:** [Open Swagger UI](https://peopleprime-hr-copilot.onrender.com/docs)
+
+The application is deployed using Render's Free Web Service.
+
+> **Note on Free Hosting**: Free instances spin down after periods of inactivity, which may cause a cold-start delay (~50 seconds) on the initial request while the container boots. Subsequent requests respond with normal low latency. SQLite audit history is stored ephemerally and does not persist across service restarts or redeployments.
+
 An enterprise-grade, deterministic **Agentic RAG Copilot** built for **PeoplePrime Technologies** (a fictional enterprise of 5,000 employees).
 
 The Copilot resolves employee inquiries across company leave, remote-work guidelines, attendance, payroll, benefits, onboarding, offboarding, and conduct policies. It prioritizes private company documents, grades retrieved evidence using Groq LLM, falls back conditionally to web search (Tavily) when private knowledge is insufficient, rewrites queries within bounded retries (max 1), and logs all execution traces to an ACID-compliant SQLite audit store.
@@ -222,10 +234,10 @@ This project includes a native `render.yaml` blueprint and `Dockerfile.render` d
 
 ### Render Free Tier Runtime Characteristics & Constraints:
 - **Cost**: **$0.00** (Free compute plan, zero paid add-ons, no credit card required).
-- **RAM Limit**: **512 MB**.
+- **RAM Limit**: **512 MB** (Optimized with **ONNX Runtime**, consuming only ~88 MB idle / ~244 MB peak RAM, leaving over 50% headroom).
 - **Ephemeral Filesystem**: SQLite audit logs (`data/audit.db`) are ephemeral and reset when the free container spins down or redeploys.
-- **Spin-down & Cold Starts**: Render Free services spin down after 15 minutes of inactivity. The first incoming request will experience a cold-start delay (~50–60 seconds) while the container boots and PyTorch initializes. Subsequent warm requests process with normal low latency.
-- **Single Worker**: Configured with `--workers 1` to stay within memory limits.
+- **Spin-down & Cold Starts**: Render Free services spin down after 15 minutes of inactivity. The first incoming request will experience a cold-start delay (~50–60 seconds) while the container boots. Subsequent warm requests process with normal low latency.
+- **Single Worker**: Configured with `--workers 1` to stay well within memory limits.
 
 ### Step-by-Step Render Deployment:
 1. **Push to GitHub**:
@@ -243,7 +255,7 @@ This project includes a native `render.yaml` blueprint and `Dockerfile.render` d
    - `ADMIN_API_KEY`: `your-admin-token`
 4. **Deploy**:
    - Click **Apply**.
-   - Render builds the container using `Dockerfile.render`, checks `/api/health`, and provisions a free HTTPS domain (e.g. `https://peopleprime-agentic-rag-copilot.onrender.com`).
+   - Render builds the container using `Dockerfile.render`, checks `/api/health`, and provisions the live HTTPS service at [https://peopleprime-hr-copilot.onrender.com/](https://peopleprime-hr-copilot.onrender.com/).
 
 ---
 
